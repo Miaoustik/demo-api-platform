@@ -4,11 +4,8 @@ namespace App\Entity;
 
 use ApiPlatform\Action\NotFoundAction;
 use ApiPlatform\Metadata\ApiResource;
-use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
-use ApiPlatform\Metadata\Patch;
-use ApiPlatform\Metadata\Put;
 use App\Repository\CategoryRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -27,25 +24,28 @@ use Symfony\Component\Validator\Constraints\Length;
             output: false,
             read: false
         ),
-        new GetCollection(),
-        new \ApiPlatform\Metadata\Post(),
-        new Patch(),
-        new Put(),
-        new Delete()
+        new GetCollection(
+            normalizationContext: [
+                'groups' => [Category::COLLECTION]
+            ]
+        )
     ]
 )]
 class Category
 {
+
+    public const COLLECTION = 'ReadCollection:Category';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['get:Post'])]
+    #[Groups([Post::DETAIL, self::COLLECTION])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
     #[
-        Groups(['get:Post', 'post:Post']),
-        Length(min: 3, groups: ['post:Post'])
+        Groups([Post::DETAIL, Post::CREATE, self::COLLECTION]),
+        Length(min: 3, groups: [Post::CREATE])
     ]
     private ?string $name = null;
 

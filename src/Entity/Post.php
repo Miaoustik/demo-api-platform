@@ -5,8 +5,8 @@ namespace App\Entity;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Put;
-use ApiPlatform\OpenApi\Model\Response;
 use App\Controller\PostCountController;
 use App\Controller\PostPublishController;
 use App\Repository\PostRepository;
@@ -22,6 +22,9 @@ use Symfony\Component\Validator\Constraints\Valid;
         operations: [
 
             new GetCollection(
+                normalizationContext: [
+                    'groups' => [Post::COLLECTION]
+                ],
                 filters: ['post.search_filter']
             ),
             new GetCollection(
@@ -62,22 +65,26 @@ use Symfony\Component\Validator\Constraints\Valid;
             ),
             new Get(
                 normalizationContext: [
-                    'groups' => ['get:Post', 'get:Posts'],
-                    "openapi_definition_name" => "Detail"
+                    'groups' => [Post::DETAIL],
+
                 ]
             ),
-            new Put(
+            new Patch(
                 denormalizationContext: [
-                    'groups' => ['put:Post']
+                    'groups' => [Post::MODIFY],
+
                 ]
             ),
             new \ApiPlatform\Metadata\Post(
 
+                normalizationContext: [
+                    'groups' => [Post::CREATE_RETURN]
+                ],
                 denormalizationContext: [
-                    'groups' => ['post:Post']
+                    'groups' => [Post::CREATE]
                 ],
                 validationContext: [
-                    'groups' => ['post:Post']
+                    'groups' => [Post::CREATE]
                 ]
             ),
             new \ApiPlatform\Metadata\Post(
@@ -94,7 +101,8 @@ use Symfony\Component\Validator\Constraints\Valid;
                                 ]
                             ],
                         ]
-                    ]
+                    ],
+
                 ],
                 name: "publish"
             )
@@ -104,29 +112,37 @@ use Symfony\Component\Validator\Constraints\Valid;
 ]
 class Post
 {
+    public const DETAIL = 'ReadDetail:Post';
+    public const COLLECTION = 'ReadCollection:Post';
+    public const MODIFY = 'Modify:Post';
+    public const REPLACE = 'Replace:Post';
+    public const DELETE = 'Delete:Post';
+    public const CREATE = 'Create:Post';
+    public const CREATE_RETURN = 'Create:Post:return';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(["get:Posts", "post:Post"])]
+    #[Groups([self::COLLECTION, self::CREATE, self::DETAIL, self::CREATE_RETURN])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
     #[
-        Groups(["get:Posts", "put:Post", "post:Post"]),
-        Length(min: 5, groups: ["post:Post"])
+        Groups([self::COLLECTION, self::MODIFY, self::CREATE, self::DETAIL]),
+        Length(min: 5, groups: [self::CREATE])
     ]
     private ?string $title = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(["get:Posts", "post:Post"])]
+    #[Groups([self::COLLECTION, self::CREATE, self::DETAIL])]
     private ?string $slug = null;
 
     #[ORM\Column(type: Types::TEXT)]
-    #[Groups(["get:Post", "post:Post"])]
+    #[Groups([self::DETAIL, self::CREATE])]
     private ?string $content = null;
 
     #[ORM\Column]
-    #[Groups(["get:Post"])]
+    #[Groups([self::DETAIL])]
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\Column]
@@ -134,13 +150,13 @@ class Post
 
     #[ORM\ManyToOne(cascade: ['persist'], inversedBy: 'posts')]
     #[
-        Groups(["get:Post", "put:Post", "post:Post"]),
+        Groups([self::DETAIL, self::MODIFY, self::CREATE]),
         Valid()
     ]
     private ?Category $category = null;
 
     #[ORM\Column(options: ['default' => false])]
-    #[Groups(['get:Post'])]
+    #[Groups([self::DETAIL])]
     private ?bool $online = false;
 
     public function __construct()

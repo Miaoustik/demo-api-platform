@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Action\NotFoundAction;
 use ApiPlatform\Metadata\ApiProperty;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Delete;
@@ -24,17 +25,27 @@ use Symfony\Component\Validator\Constraints\NotBlank;
         new \ApiPlatform\Metadata\Post(),
         new Put(
             denormalizationContext: [
-                'groups' => ['put:Dependency']
+                'groups' => [Dependency::REPLACE]
             ]
         ),
         new Delete(),
-        new Get()
+        new Get(
+            controller: NotFoundAction::class,
+            openapiContext: [
+                'summary' => 'hidden'
+            ],
+            output: false,
+            read: false
+        )
     ],
     provider: DependencyProvider::class,
     processor: DependencyProcessor::class
 )]
 class Dependency
 {
+    public const REPLACE = 'Replace:Dependency';
+
+
     #[ApiProperty(
         identifier: true
     )]
@@ -58,7 +69,7 @@ class Dependency
         ),
         Length(min: 2),
         NotBlank,
-        Groups(['put:Dependency'])
+        Groups([self::REPLACE])
     ]
     private string $version;
 
