@@ -11,7 +11,10 @@ class LogoutSubscriber implements EventSubscriberInterface
 {
     public function onLogoutEvent(LogoutEvent $event): void
     {
-        if (in_array('application/json', $event->getRequest()->getAcceptableContentTypes())) {
+        if (
+            in_array('application/json', $event->getRequest()->getAcceptableContentTypes()) ||
+            in_array('application/ld+json', $event->getRequest()->getAcceptableContentTypes())
+        ) {
             $event->setResponse(new JsonResponse(status: Response::HTTP_NO_CONTENT));
         }
     }

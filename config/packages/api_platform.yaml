@@ -7,6 +7,5 @@ api_platform:
         versions: [3]
 
 
-
     metadata_backward_compatibility_layer: false
     show_webby: false

@@ -118,7 +118,7 @@ class Post
     public const REPLACE = 'Replace:Post';
     public const DELETE = 'Delete:Post';
     public const CREATE = 'Create:Post';
-    public const CREATE_RETURN = 'Create:Post:return';
+    public const CREATE_RETURN = 'Create:Return:Post';
 
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -158,6 +158,9 @@ class Post
     #[ORM\Column(options: ['default' => false])]
     #[Groups([self::DETAIL])]
     private ?bool $online = false;
+
+    #[ORM\ManyToOne(inversedBy: 'posts')]
+    private ?User $author = null;
 
     public function __construct()
     {
@@ -250,6 +253,18 @@ class Post
     public function setOnline(bool $online): static
     {
         $this->online = $online;
+
+        return $this;
+    }
+
+    public function getAuthor(): ?User
+    {
+        return $this->author;
+    }
+
+    public function setAuthor(?User $author): static
+    {
+        $this->author = $author;
 
         return $this;
     }

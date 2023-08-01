@@ -98,6 +98,28 @@ class OpenApiFactory implements OpenApiFactoryInterface
         );
         $openApi->getPaths()->addPath('/api/login', $loginPath);
 
+        $logoutPath = new PathItem(
+            post: new Operation(
+                operationId: 'postApiLogout',
+                tags: ['Auth'],
+                responses: [
+                    '204' => [
+                        'description' => "Utilisateur déconnecté.",
+                    ]
+                ],
+                summary: "Permet de se déconnecter.",
+                description: "Permet de se déconnecter."
+            )
+        );
+
+        $openApi->getPaths()->addPath('/logout', $logoutPath);
+
+        $mePath = $openApi->getPaths()->getPath('/api/me');
+        $meOperation = $mePath->getGet();
+        $meResponses = $meOperation->getResponses();
+        unset($meResponses['404']);
+        $openApi->getPaths()->addPath('/api/me', $mePath->withGet($meOperation->withResponses($meResponses)));
+
         return $openApi;
     }
 }
