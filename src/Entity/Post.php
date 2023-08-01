@@ -14,6 +14,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints\Length;
+use Symfony\Component\Validator\Constraints\NotNull;
 use Symfony\Component\Validator\Constraints\Valid;
 
 #[ORM\Entity(repositoryClass: PostRepository::class)]
@@ -82,9 +83,6 @@ use Symfony\Component\Validator\Constraints\Valid;
                 ],
                 denormalizationContext: [
                     'groups' => [Post::CREATE]
-                ],
-                validationContext: [
-                    'groups' => [Post::CREATE]
                 ]
             ),
             new \ApiPlatform\Metadata\Post(
@@ -106,11 +104,10 @@ use Symfony\Component\Validator\Constraints\Valid;
                 ],
                 name: "publish"
             )
-        ],
-        paginationItemsPerPage: 2
+        ]
     )
 ]
-class Post
+class Post implements UserOwnedInterface
 {
     public const DETAIL = 'ReadDetail:Post';
     public const COLLECTION = 'ReadCollection:Post';
@@ -139,6 +136,7 @@ class Post
 
     #[ORM\Column(type: Types::TEXT)]
     #[Groups([self::DETAIL, self::CREATE])]
+    #[NotNull]
     private ?string $content = null;
 
     #[ORM\Column]

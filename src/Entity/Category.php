@@ -31,7 +31,7 @@ use Symfony\Component\Validator\Constraints\Length;
         )
     ]
 )]
-class Category
+class Category implements UserOwnedInterface
 {
 
     public const COLLECTION = 'ReadCollection:Category';
@@ -51,6 +51,9 @@ class Category
 
     #[ORM\OneToMany(mappedBy: 'category', targetEntity: Post::class)]
     private Collection $posts;
+
+    #[ORM\ManyToOne(inversedBy: 'categories')]
+    private ?User $author = null;
 
     public function __construct()
     {
@@ -100,6 +103,18 @@ class Category
                 $post->setCategory(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getAuthor(): ?User
+    {
+        return $this->author;
+    }
+
+    public function setAuthor(?User $author): static
+    {
+        $this->author = $author;
 
         return $this;
     }
