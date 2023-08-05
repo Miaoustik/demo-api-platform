@@ -8,15 +8,18 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
 use App\Attribute\ApiAuthGroups;
 use App\Controller\PostCountController;
+use App\Controller\PostImageController;
 use App\Controller\PostPublishController;
 use App\Repository\PostRepository;
 use App\Security\Voter\UserOwnedVoter;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotNull;
 use Symfony\Component\Validator\Constraints\Valid;
+use Vich\UploaderBundle\Mapping\Annotation as Vich;
 
 #[ORM\Entity(repositoryClass: PostRepository::class)]
 #[
@@ -104,14 +107,39 @@ use Symfony\Component\Validator\Constraints\Valid;
 
                 ],
                 name: "publish"
+            ),
+            new \ApiPlatform\Metadata\Post(
+                uriTemplate: '/posts/{id}/image',
+                requirements: ['id' => '\d+'],
+                openapiContext: [
+                    'requestBody' => [
+                        'content' => [
+                            'multipart/form-data' => [
+                                'schema' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'image' => [
+                                            'type' => 'string',
+                                            'format' => 'binary'
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ],
+                normalizationContext: [
+                    'groups' => [self::MODIFY_IMAGE]
+                ]
             )
         ]
     ),
     ApiAuthGroups([
         UserOwnedVoter::EDIT => Post::USER_COLLECTION
-    ])
+    ]),
+    Vich\Uploadable
 ]
-class Post implements UserOwnedInterface
+class Post implements UserOwnedInterface, HasFileInterface
 {
     public const DETAIL = 'ReadDetail:Post';
     public const COLLECTION = 'ReadCollection:Post';
@@ -121,6 +149,7 @@ class Post implements UserOwnedInterface
     public const DELETE = 'Delete:Post';
     public const CREATE = 'Create:Post';
     public const CREATE_RETURN = 'Create:Return:Post';
+    public const MODIFY_IMAGE = 'Modify:Post:Image';
 
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -130,7 +159,7 @@ class Post implements UserOwnedInterface
 
     #[ORM\Column(length: 255)]
     #[
-        Groups([self::COLLECTION, self::MODIFY, self::CREATE, self::DETAIL]),
+        Groups([self::COLLECTION, self::MODIFY, self::CREATE, self::DETAIL, self::MODIFY_IMAGE]),
         Length(min: 5, groups: [self::CREATE])
     ]
     private ?string $title = null;
@@ -140,7 +169,7 @@ class Post implements UserOwnedInterface
     private ?string $slug = null;
 
     #[ORM\Column(type: Types::TEXT)]
-    #[Groups([self::DETAIL, self::CREATE])]
+    #[Groups([self::DETAIL, self::CREATE, self::MODIFY_IMAGE])]
     #[NotNull]
     private ?string $content = null;
 
@@ -149,6 +178,7 @@ class Post implements UserOwnedInterface
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\Column]
+    #[Groups([self::MODIFY_IMAGE])]
     private ?\DateTimeImmutable $updatedAt = null;
 
     #[ORM\ManyToOne(cascade: ['persist'], inversedBy: 'posts')]
@@ -164,6 +194,16 @@ class Post implements UserOwnedInterface
 
     #[ORM\ManyToOne(inversedBy: 'posts')]
     private ?User $author = null;
+
+    #[Vich\UploadableField(mapping: "post_image", fileNameProperty: "filePath")]
+    private ?File $file = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups([self::MODIFY_IMAGE])]
+    private ?string $filePath = null;
+
+    #[Groups([self::MODIFY_IMAGE])]
+    private ?string $fileUrl = null;
 
     public function __construct()
     {
@@ -271,4 +311,59 @@ class Post implements UserOwnedInterface
 
         return $this;
     }
+
+    public function getFilePath(): ?string
+    {
+        return $this->filePath;
+    }
+
+    public function setFilePath(?string $filePath): static
+    {
+        $this->filePath = $filePath;
+
+        return $this;
+    }
+
+    /**
+     * @return File|null
+     */
+    public function getFile(): ?File
+    {
+        return $this->file;
+    }
+
+    /**
+     * @param File|null $file
+     * @return Post
+     */
+    public function setFile(?File $file): Post
+    {
+        $this->file = $file;
+
+        if ($file !== null) {
+            $this->setUpdatedAt(new \DateTimeImmutable());
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getFileUrl(): ?string
+    {
+        return $this->fileUrl;
+    }
+
+    /**
+     * @param string|null $fileUrl
+     * @return Post
+     */
+    public function setFileUrl(?string $fileUrl): Post
+    {
+        $this->fileUrl = $fileUrl;
+        return $this;
+    }
+
+
 }
