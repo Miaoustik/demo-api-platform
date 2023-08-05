@@ -6,10 +6,11 @@ use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
-use ApiPlatform\Metadata\Put;
+use App\Attribute\ApiAuthGroups;
 use App\Controller\PostCountController;
 use App\Controller\PostPublishController;
 use App\Repository\PostRepository;
+use App\Security\Voter\UserOwnedVoter;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
@@ -105,12 +106,16 @@ use Symfony\Component\Validator\Constraints\Valid;
                 name: "publish"
             )
         ]
-    )
+    ),
+    ApiAuthGroups([
+        UserOwnedVoter::EDIT => Post::USER_COLLECTION
+    ])
 ]
 class Post implements UserOwnedInterface
 {
     public const DETAIL = 'ReadDetail:Post';
     public const COLLECTION = 'ReadCollection:Post';
+    public const USER_COLLECTION = 'User:ReadCollection:Post';
     public const MODIFY = 'Modify:Post';
     public const REPLACE = 'Replace:Post';
     public const DELETE = 'Delete:Post';
@@ -131,7 +136,7 @@ class Post implements UserOwnedInterface
     private ?string $title = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups([self::COLLECTION, self::CREATE, self::DETAIL])]
+    #[Groups([self::USER_COLLECTION, self::CREATE, self::DETAIL])]
     private ?string $slug = null;
 
     #[ORM\Column(type: Types::TEXT)]
@@ -154,7 +159,7 @@ class Post implements UserOwnedInterface
     private ?Category $category = null;
 
     #[ORM\Column(options: ['default' => false])]
-    #[Groups([self::DETAIL])]
+    #[Groups([self::DETAIL, self::USER_COLLECTION])]
     private ?bool $online = false;
 
     #[ORM\ManyToOne(inversedBy: 'posts')]
